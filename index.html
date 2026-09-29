@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>On joue à quoi ce soir ?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#1E4A38; --felt-deep:#153628; --on-felt:#F3EFE3; --on-felt-muted:#B5C6BB;
+  --card:#FFFDF7; --ink:#26221C; --muted:#6E685D;
+  --gold:#E7AE2F; --red:#C43E36; --line:rgba(243,239,227,.16); --chip:rgba(243,239,227,.08);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --felt:#122C21; --felt-deep:#0C1F17; --card:#F4EFE2; --line:rgba(243,239,227,.12); --chip:rgba(243,239,227,.06); }
+}
+:root[data-theme="dark"]{ --felt:#122C21; --felt-deep:#0C1F17; --card:#F4EFE2; --line:rgba(243,239,227,.12); --chip:rgba(243,239,227,.06); }
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; min-height:100%;
+  font-family:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color:var(--on-felt);
+  background:var(--felt);
+  background-image:radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.06), transparent 60%),
+    radial-gradient(ellipse at 50% 120%, var(--felt-deep), transparent 70%);
+  background-attachment:fixed;
+  line-height:1.45;
+}
+.wrap{max-width:760px; margin:0 auto; padding:28px 20px 60px}
+h1{font-weight:800; font-size:clamp(2.2rem,7vw,3.6rem); line-height:1; letter-spacing:-.02em; margin:8px 0 10px}
+.sub{color:var(--on-felt-muted); margin:0 0 28px; font-size:1.05rem}
+
+.panel{display:grid; gap:22px; margin-bottom:34px}
+.q{font-weight:600; font-size:1.05rem; margin:0 0 10px}
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{
+  font:inherit; font-size:.95rem; color:var(--on-felt); background:var(--chip);
+  border:1.5px solid var(--line); border-radius:999px; padding:7px 14px; cursor:pointer;
+}
+.chip[aria-pressed="true"]{background:var(--gold); border-color:var(--gold); color:#2A1F05; font-weight:600}
+.chip:focus-visible,.btn:focus-visible,.row button:focus-visible,input:focus-visible,.stepper button:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+
+.stepper{display:inline-flex; align-items:center; gap:4px; background:var(--chip); border:1.5px solid var(--line); border-radius:14px; padding:4px}
+.stepper button{font:inherit; font-size:1.4rem; width:44px; height:44px; border:0; border-radius:10px; background:transparent; color:var(--on-felt); cursor:pointer}
+.stepper button:hover{background:var(--chip)}
+.stepper output{min-width:92px; text-align:center; font-weight:800; font-size:1.5rem}
+.stepper output small{font-weight:400; font-size:.9rem; color:var(--on-felt-muted); margin-left:4px}
+
+/* Table */
+.table{display:grid; justify-items:center; gap:18px; margin:10px 0 44px}
+.scene{perspective:1100px; width:min(330px,100%)}
+.card{position:relative; aspect-ratio:5/7; transform-style:preserve-3d; transition:transform .7s cubic-bezier(.3,1.3,.5,1)}
+.card.flipped{transform:rotateY(180deg)}
+.face{position:absolute; inset:0; border-radius:18px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 18px 40px rgba(0,0,0,.35), 0 2px 0 rgba(0,0,0,.2)}
+.back{
+  background:var(--red);
+  background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 6px, transparent 6px 16px),
+                   repeating-linear-gradient(-45deg, rgba(255,255,255,.12) 0 6px, transparent 6px 16px);
+  border:10px solid var(--card);
+  display:grid; place-items:center;
+}
+.back span{background:var(--card); color:var(--red); font-weight:800; font-size:2.6rem; width:84px; height:84px; border-radius:50%; display:grid; place-items:center}
+.front{background:var(--card); color:var(--ink); transform:rotateY(180deg); padding:22px 22px 20px; display:flex; flex-direction:column}
+.front .corner{font-weight:800; color:var(--red); font-size:1.1rem; line-height:1}
+.front .corner.br{margin-top:auto; align-self:flex-end; transform:rotate(180deg)}
+.front h2{font-weight:800; font-size:clamp(1.7rem,6vw,2.2rem); line-height:1.05; margin:18px 0 10px; letter-spacing:-.01em}
+.front .meta{color:var(--muted); font-size:.95rem; margin:0 0 14px}
+.front .pitch{margin:0; font-size:1.05rem}
+.front .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:14px}
+.front .tags span{font-size:.8rem; border:1.5px solid #D9D2C2; border-radius:999px; padding:2px 9px; color:var(--muted)}
+.card.shake{animation:shake .5s ease-in-out}
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg) translateY(-6px)}40%{transform:rotate(5deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(2deg)}}
+
+.btn{
+  font:inherit; font-weight:800; font-size:1.2rem; cursor:pointer;
+  background:var(--gold); color:#2A1F05; border:0; border-radius:16px; padding:15px 30px;
+  box-shadow:0 4px 0 #A87A12;
+}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 #A87A12}
+.btn:disabled{opacity:.5; cursor:not-allowed}
+.hint{color:var(--on-felt-muted); font-size:.95rem; margin:0; text-align:center; max-width:40ch}
+
+/* List */
+.listhead{display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; border-bottom:1.5px solid var(--line); padding-bottom:10px; margin-bottom:4px}
+.listhead h3{margin:0; font-size:1.3rem; font-weight:800}
+.listhead p{margin:0; color:var(--on-felt-muted); font-size:.9rem}
+.row{display:grid; grid-template-columns:1fr auto; gap:4px 12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line)}
+.row .name{font-weight:600; font-size:1.05rem}
+.row .info{grid-column:1; color:var(--on-felt-muted); font-size:.88rem}
+.row button{grid-row:1 / span 2; grid-column:2; font:inherit; font-size:.85rem; color:var(--on-felt); background:transparent; border:1.5px solid var(--line); border-radius:10px; padding:6px 10px; cursor:pointer; white-space:nowrap}
+.row.off .name,.row.off .info{text-decoration:line-through; opacity:.45}
+.empty{padding:22px 0; color:var(--on-felt-muted)}
+
+details{margin-top:30px; border:1.5px solid var(--line); border-radius:14px; padding:14px 16px; background:var(--chip)}
+summary{cursor:pointer; font-weight:600}
+form{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:14px}
+form label{display:grid; gap:4px; font-size:.85rem; color:var(--on-felt-muted)}
+form label.wide{grid-column:1/-1}
+input{font:inherit; font-size:1rem; color:var(--ink); background:var(--card); border:0; border-radius:10px; padding:9px 11px; width:100%}
+form .btn{font-size:1rem; padding:10px 18px; grid-column:1/-1; justify-self:start}
+
+@media (prefers-reduced-motion: reduce){
+  .card{transition:none} .card.shake{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>On joue à quoi ce soir&nbsp;?</h1>
+  <p class="sub">Les jeux rapides et simples de la ludothèque de Débit de Jeux. Réglez les curseurs, tirez une carte, filez la chercher sur l'étagère.</p>
+
+  <section class="panel" aria-label="Critères">
+    <div>
+      <p class="q" id="q-players">Vous êtes combien&nbsp;?</p>
+      <div class="stepper" role="group" aria-labelledby="q-players">
+        <button type="button" id="minus" aria-label="Un joueur de moins">−</button>
+        <output id="players" aria-live="polite">5<small>joueurs</small></output>
+        <button type="button" id="plus" aria-label="Un joueur de plus">+</button>
+      </div>
+    </div>
+    <div>
+      <p class="q">Quel genre de jeu&nbsp;?</p>
+      <div class="chips" id="kind"></div>
+    </div>
+    <div>
+      <p class="q">Une partie de combien de temps&nbsp;?</p>
+      <div class="chips" id="time"></div>
+    </div>
+    <div>
+      <p class="q">Envie de quoi&nbsp;? <span style="font-weight:400;color:var(--on-felt-muted)">(rien de coché = tout)</span></p>
+      <div class="chips" id="moods"></div>
+    </div>
+    <div>
+      <p class="q">Règles</p>
+      <div class="chips"><button type="button" class="chip" id="easy" aria-pressed="false">Expliquées en 2 minutes max</button></div>
+    </div>
+  </section>
+
+  <section class="table" aria-label="Tirage">
+    <div class="scene">
+      <div class="card" id="card">
+        <div class="face back"><span>?</span></div>
+        <div class="face front" aria-live="polite">
+          <div class="corner" id="c1">★</div>
+          <h2 id="g-name">—</h2>
+          <p class="meta" id="g-meta"></p>
+          <p class="pitch" id="g-pitch"></p>
+          <div class="tags" id="g-tags"></div>
+          <div class="corner br" id="c2">★</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="draw" type="button">Tirer un jeu</button>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <section aria-label="Jeux compatibles">
+    <div class="listhead">
+      <h3 id="count">Les jeux qui collent</h3>
+      <p>Pas sur l'étagère ou déjà joué&nbsp;? Écartez-le du tirage.</p>
+    </div>
+    <div id="list"></div>
+
+    <details>
+      <summary>Ajouter un jeu vu au bar</summary>
+      <form id="add">
+        <label class="wide">Nom du jeu<input name="n" required maxlength="40" placeholder="ex. Mito"></label>
+        <label>Joueurs min<input name="min" type="number" min="1" max="20" value="3" required></label>
+        <label>Joueurs max<input name="max" type="number" min="1" max="30" value="8" required></label>
+        <label>Durée (min)<input name="t" type="number" min="5" max="180" value="20" required></label>
+        <button class="btn" type="submit">Ajouter au paquet</button>
+      </form>
+    </details>
+  </section>
+</div>
+
+<script>
+const TAGS = {
+  rire:"Fous rires", bluff:"Bluff", equipes:"En équipes", coop:"Coopératif",
+  mots:"Mots", dessin:"Dessin & mime", rapidite:"Rapidité", deduction:"Déduction", cartes:"Cartes",
+  des:"Dés", hasard:"Stop ou encore", strategie:"Petite stratégie", adresse:"Adresse", enquete:"Enquête & escape"
+};
+const BASE = [
+  {n:"Codenames", min:4, max:8, t:15, easy:true, tags:["equipes","mots","deduction"], p:"Deux équipes, un maître-espion chacune, un seul indice pour faire deviner plusieurs mots."},
+  {n:"Codenames Images", min:4, max:8, t:15, easy:true, tags:["equipes","deduction"], p:"Codenames avec des illustrations loufoques à la place des mots."},
+  {n:"Just One", min:3, max:7, t:20, easy:true, tags:["coop","mots","rire"], p:"Chacun écrit un indice pour faire deviner un mot. Les doublons sont effacés."},
+  {n:"So Clover!", min:3, max:6, t:30, easy:true, tags:["coop","mots","deduction"], p:"Un trèfle, des indices qui relient deux mots, les autres reconstituent le puzzle."},
+  {n:"Dixit", min:3, max:8, t:30, easy:true, tags:["deduction","rire"], p:"Des illustrations oniriques, un indice ni trop clair ni trop flou."},
+  {n:"Time's Up! Party", min:4, max:12, t:45, easy:true, tags:["equipes","dessin","rire","mots"], p:"Trois manches sur les mêmes cartes : on décrit, puis un seul mot, puis on mime."},
+  {n:"Longueur d'Onde", min:4, max:12, t:30, easy:true, tags:["equipes","rire","deduction"], p:"Placer un indice sur une échelle entre deux idées. Les débats sont le vrai jeu."},
+  {n:"Concept", min:4, max:12, t:40, easy:false, tags:["equipes","deduction","mots"], p:"Faire deviner un mot uniquement avec des icônes universelles."},
+  {n:"Imagine", min:3, max:8, t:30, easy:true, tags:["deduction","mots"], p:"Faire deviner avec des cartes transparentes qu'on superpose et qu'on bouge."},
+  {n:"Decrypto", min:3, max:8, t:30, easy:false, tags:["equipes","mots","deduction"], p:"Transmettre un code à son équipe sans que l'autre ne le craque."},
+  {n:"Unanimo", min:3, max:12, t:20, easy:true, tags:["mots","rire"], p:"Un mot, huit associations chacun. On marque en pensant comme les autres."},
+  {n:"Top Ten", min:4, max:9, t:30, easy:true, tags:["coop","rire"], p:"Classer ses réponses de 1 à 10 sur des thèmes absurdes, sans dire son chiffre."},
+  {n:"Fiesta de los Muertos", min:4, max:8, t:20, easy:true, tags:["coop","mots","deduction"], p:"Un téléphone arabe de mots à la Día de los Muertos : retrouvez qui était qui."},
+  {n:"Detective Club", min:4, max:8, t:45, easy:false, tags:["bluff","deduction"], p:"Tout le monde connaît le mot sauf un conspirateur, qui doit improviser avec des images."},
+  {n:"When I Dream", min:4, max:10, t:30, easy:true, tags:["rire","bluff","mots"], p:"Un rêveur les yeux bandés, des fées, des cauchemars et des marchands de sable qui brouillent tout."},
+  {n:"Feelinks", min:3, max:8, t:30, easy:true, tags:["deduction","rire"], p:"Deviner quelle émotion les autres ressentent face à une situation. On apprend des choses."},
+  {n:"Similo", min:2, max:8, t:15, easy:true, tags:["coop","deduction"], p:"Trouver le personnage secret grâce à des cartes qui lui ressemblent, ou pas."},
+  {n:"Esquissé ?", min:4, max:8, t:30, easy:true, tags:["dessin","rire"], p:"Le téléphone arabe en dessins. Les déformations sont hilarantes."},
+  {n:"Pictomania", min:3, max:6, t:25, easy:false, tags:["dessin","rapidite","rire"], p:"Tout le monde dessine et devine en même temps. Chaos garanti."},
+  {n:"A Fake Artist Goes to New York", min:5, max:10, t:20, easy:true, tags:["dessin","bluff","rire"], p:"Un dessin collectif, un trait chacun, et un faux artiste qui ne connaît pas le sujet."},
+  {n:"TTMC : Tu te mets combien ?", min:4, max:12, t:45, easy:true, tags:["rire"], p:"Vous choisissez la difficulté de votre question de culture générale. Assumez."},
+  {n:"Letter Jam", min:2, max:6, t:45, easy:false, tags:["coop","mots","deduction"], p:"Vous voyez les lettres des autres, jamais la vôtre. Reconstituez votre mot."},
+  {n:"Skull & Roses", min:3, max:6, t:30, easy:true, tags:["bluff"], p:"Des fleurs, un crâne, des paris qui montent. Du bluff pur, très tendu."},
+  {n:"Le Poker des Cafards", min:2, max:6, t:20, easy:true, tags:["bluff","cartes","rire"], p:"« Ceci est un cafard. » Vrai ou faux ? Le perdant collectionne les bestioles."},
+  {n:"Perudo", min:2, max:6, t:30, easy:true, tags:["bluff"], p:"Des dés sous un gobelet et des enchères de plus en plus culottées."},
+  {n:"Coup", min:2, max:6, t:15, easy:false, tags:["bluff","cartes"], p:"Deux personnages cachés, et vous pouvez prétendre être n'importe lequel."},
+  {n:"Mascarade", min:4, max:12, t:30, easy:false, tags:["bluff","rire"], p:"Les rôles s'échangent face cachée : même vous ne savez plus qui vous êtes."},
+  {n:"The Resistance : Avalon", min:5, max:10, t:30, easy:false, tags:["bluff","deduction","equipes"], p:"Chevaliers loyaux contre traîtres de Mordred. Les accusations volent."},
+  {n:"Time Bomb", min:4, max:8, t:15, easy:true, tags:["bluff","equipes"], p:"Sherlock contre Moriarty : couper les bons fils sans savoir à qui se fier."},
+  {n:"Secret Identity", min:3, max:8, t:30, easy:true, tags:["bluff","deduction","rire"], p:"Faire deviner son personnage secret à un complice sans que les autres ne le trouvent."},
+  {n:"Shadow Hunters", min:4, max:8, t:45, easy:false, tags:["bluff","deduction"], p:"Chasseurs, ombres et neutres, identités cachées et coups de dés dans un manoir."},
+  {n:"Galèrapagos", min:3, max:12, t:20, easy:true, tags:["bluff","coop","rire"], p:"Naufragés sur une île : on coopère pour construire un radeau... jusqu'à ce que l'eau manque."},
+  {n:"Obscurio", min:2, max:8, t:45, easy:false, tags:["coop","bluff","deduction"], p:"Guider les autres hors d'une bibliothèque magique avec des images, un traître parmi eux."},
+  {n:"Mysterium", min:2, max:7, t:45, easy:false, tags:["coop","deduction"], p:"Un fantôme muet envoie des visions pour aider les médiums à résoudre son meurtre."},
+  {n:"Kobayakawa", min:3, max:6, t:15, easy:true, tags:["bluff","cartes"], p:"Une carte en main, une décision : miser ou se coucher. Minuscule et malin."},
+  {n:"Saboteur", min:3, max:10, t:30, easy:true, tags:["bluff","cartes"], p:"Des nains creusent vers l'or. Certains sabotent en douce."},
+  {n:"BANG! Le Jeu de Dés", min:3, max:8, t:15, easy:true, tags:["bluff","rire"], p:"Shérif, adjoints, hors-la-loi et un renégat. Les rôles cachés à coups de dés."},
+  {n:"Cash'n Guns", min:4, max:8, t:30, easy:true, tags:["bluff","rire"], p:"Des gangsters, des pistolets en mousse, et on se braque pour partager le butin."},
+  {n:"Colt Express", min:2, max:6, t:40, easy:false, tags:["rire"], p:"Braquer un train en programmant ses actions. Rien ne se passe comme prévu."},
+  {n:"King of Tokyo", min:2, max:6, t:30, easy:true, tags:["rire"], p:"Des monstres géants se tapent dessus pour régner sur Tokyo. Yams et baston."},
+  {n:"Camel Up", min:3, max:8, t:30, easy:true, tags:["rire"], p:"Des paris sur une course de chameaux qui s'empilent et se portent les uns les autres."},
+  {n:"Ready Set Bet", min:2, max:9, t:45, easy:true, tags:["rire","rapidite"], p:"Une course de chevaux en direct, on parie en criant avant que le bookmaker ferme."},
+  {n:"6 qui prend !", min:2, max:10, t:30, easy:true, tags:["cartes","rire"], p:"Posez vos cartes en même temps et priez pour ne pas ramasser la rangée."},
+  {n:"Flip 7", min:3, max:18, t:20, easy:true, tags:["cartes","rire"], p:"Stop ou encore : piochez sans tirer de doublon, ou perdez tout."},
+  {n:"Skull King", min:2, max:8, t:30, easy:true, tags:["cartes","rire"], p:"Un jeu de plis pirate : annoncez combien vous en ferez, pile, ni plus ni moins."},
+  {n:"Trio", min:3, max:6, t:15, easy:true, tags:["cartes","deduction"], p:"Retrouver des brelans en révélant les cartes des autres. Mémoire et culot."},
+  {n:"The Gang", min:3, max:6, t:20, easy:true, tags:["coop","cartes","deduction"], p:"Un poker coopératif : classez vos mains sans vous les montrer."},
+  {n:"That's Not a Hat", min:3, max:8, t:15, easy:true, tags:["bluff","rire","cartes"], p:"Des cadeaux face cachée qui passent de main en main. Vous vous souvenez de ce que c'était ?"},
+  {n:"Hanabi", min:2, max:5, t:25, easy:false, tags:["coop","deduction","cartes"], p:"Vous voyez les cartes de tout le monde, sauf les vôtres. Un feu d'artifice à réussir."},
+  {n:"Magic Maze", min:2, max:8, t:15, easy:false, tags:["coop","rapidite"], p:"Chacun contrôle une direction pour tous les héros. En silence, contre le sablier."},
+  {n:"Kites", min:2, max:6, t:10, easy:true, tags:["coop","rapidite"], p:"Garder des cerfs-volants en l'air en retournant des sabliers. Stress joyeux."},
+  {n:"Dobble", min:2, max:8, t:15, easy:true, tags:["rapidite","rire"], p:"Un seul symbole en commun entre deux cartes. Le premier qui le crie gagne."},
+  {n:"Jungle Speed", min:3, max:8, t:15, easy:true, tags:["rapidite","rire"], p:"Deux symboles identiques et tout le monde se jette sur le totem."},
+  {n:"Halli Galli", min:2, max:6, t:15, easy:true, tags:["rapidite","rire"], p:"Cinq fruits identiques sur la table ? Tapez la sonnette avant les autres."},
+  {n:"Taco Chat Bouc Cheese Pizza", min:2, max:8, t:10, easy:true, tags:["rapidite","rire"], p:"On récite en posant des cartes, et quand ça correspond, tout le monde tape."},
+  {n:"Salade de cafards", min:2, max:6, t:15, easy:true, tags:["rapidite","rire"], p:"Nommer le légume posé, sauf quand il ne faut pas. Le cerveau fond."},
+  {n:"Poule Poule", min:2, max:8, t:15, easy:true, tags:["rapidite","rire"], p:"Compter les œufs qui vont éclore pendant que renards et coqs s'en mêlent."},
+  {n:"Cortex Challenge", min:2, max:6, t:15, easy:true, tags:["rapidite","deduction"], p:"Des mini-défis cérébraux en rafale : labyrinthes, mémoire, toucher."},
+  {n:"Smart10", min:2, max:8, t:20, easy:true, tags:["rire"], p:"Dix réponses possibles par question. Continuer à répondre ou passer pour garder ses points."},
+  {n:"Timeline", min:2, max:8, t:15, easy:true, tags:["cartes"], p:"Placer des événements dans l'ordre chronologique. Plus dur qu'il n'y paraît."},
+  {n:"Wazabi", min:2, max:6, t:20, easy:true, tags:["rire"], p:"Des dés et des cartes pour refiler ses dés aux autres. Méchant et rapide."},
+  {n:"Zombie Dice", min:2, max:8, t:15, easy:true, tags:["rire"], p:"Vous êtes un zombie : dévorez des cerveaux, mais attention aux fusils."},
+  {n:"Black Stories", min:2, max:12, t:20, easy:true, tags:["deduction"], p:"Une énigme macabre, des questions en oui ou non pour reconstituer l'histoire."},
+  {n:"Twin It!", min:2, max:6, t:15, easy:true, tags:["rapidite"], p:"Repérer deux cartes identiques parmi des motifs très proches, plus vite que les autres."},
+  {n:"Mito", min:3, max:6, t:20, easy:true, tags:["cartes","rire"], p:"Un jeu de cartes où la triche est autorisée, tant que la chouette ne vous voit pas."},
+  {n:"Kiproko", min:3, max:6, t:15, easy:true, tags:["rapidite","rire"], p:"Récupérer la bonne combinaison d'objets en s'arrachant les pièces des mains."}
+];
+const LIGHT = [
+  {n:"7 Wonders Architects", min:2, max:7, t:25, easy:true, tags:["strategie","cartes"], p:"Bâtir sa merveille en piochant des cartes. Tout le monde joue vite, personne n'attend."},
+  {n:"7 Wonders", min:3, max:7, t:30, easy:false, tags:["strategie","cartes"], p:"Le grand classique du draft : on garde une carte, on passe le reste. Même durée à 3 ou à 7."},
+  {n:"Faraway", min:2, max:6, t:30, easy:true, tags:["strategie","cartes"], p:"Poser ses cartes dans l'ordre, les compter à l'envers. Un petit casse-tête élégant."},
+  {n:"Sushi Go!", min:2, max:5, t:15, easy:true, tags:["cartes"], p:"On pioche un sushi, on passe la main. Le plus beau plateau gagne."},
+  {n:"Draftosaurus", min:2, max:5, t:20, easy:true, tags:["strategie"], p:"Des petits dinos en bois à placer dans votre parc, avec un dé qui vous embête."},
+  {n:"Love Letter", min:2, max:6, t:20, easy:true, tags:["bluff","deduction","cartes"], p:"Seize cartes, une en main, une à jouer. Faire parvenir sa lettre à la princesse."},
+  {n:"Welcome To...", min:1, max:12, t:25, easy:true, tags:["strategie"], p:"Un lotissement américain à remplir au crayon. Tout le monde joue en même temps."},
+  {n:"Cartographers", min:1, max:12, t:45, easy:true, tags:["strategie"], p:"Dessiner la carte du royaume au crayon, en respectant les édits de la reine."},
+  {n:"Qwixx", min:2, max:5, t:15, easy:true, tags:["des","hasard"], p:"Des dés, des cases à cocher, et le bon moment pour fermer une ligne."},
+  {n:"Très Futé !", min:1, max:4, t:30, easy:true, tags:["des","strategie"], p:"Un roll & write qui enchaîne les combos. Satisfaisant et nerveux."},
+  {n:"Diamant", min:3, max:8, t:30, easy:true, tags:["hasard","rire","bluff"], p:"Une mine, des rubis, des pièges. On rentre au camp ou on continue ?"},
+  {n:"Deep Sea Adventure", min:2, max:6, t:30, easy:true, tags:["hasard","rire"], p:"Plongeurs sur un seul réservoir d'oxygène partagé. Plus on ramasse, plus on respire."},
+  {n:"Celestia", min:2, max:6, t:30, easy:true, tags:["hasard","bluff","rire"], p:"Un aéronef traverse des tempêtes. Rester à bord ou sauter avant le crash ?"},
+  {n:"Can't Stop", min:2, max:4, t:30, easy:true, tags:["des","hasard"], p:"Grimpez vos colonnes aux dés, mais un mauvais lancer efface tout le tour."},
+  {n:"Mille Sabords !", min:2, max:5, t:30, easy:true, tags:["des","hasard","rire"], p:"Du Yams de pirates : trois têtes de mort et c'est fini pour ce tour."},
+  {n:"Pickomino", min:2, max:7, t:20, easy:true, tags:["des","hasard"], p:"Lancer des dés pour gagner des vers grillés, et voler ceux des voisins."},
+  {n:"Stupide Vautour", min:2, max:5, t:15, easy:true, tags:["bluff","cartes"], p:"Tout le monde mise en même temps. En cas d'égalité, personne ne gagne."},
+  {n:"For Sale", min:3, max:6, t:20, easy:true, tags:["bluff","cartes"], p:"Acheter des maisons aux enchères, puis les revendre. Deux manches, vingt minutes."},
+  {n:"Non Merci", min:3, max:7, t:20, easy:true, tags:["cartes","bluff"], p:"Prendre la carte ou payer un jeton pour la refuser. Simple et vicieux."},
+  {n:"Coloretto", min:2, max:5, t:30, easy:true, tags:["cartes"], p:"Collectionner trois couleurs de caméléons, pas plus. Le reste coûte cher."},
+  {n:"Papayoo", min:3, max:8, t:30, easy:true, tags:["cartes","rire"], p:"Un jeu de plis où il faut surtout éviter le Papayoo et ses copains."},
+  {n:"Wizard", min:3, max:6, t:45, easy:true, tags:["cartes"], p:"Prévoir exactement le nombre de plis qu'on va faire, manche après manche."},
+  {n:"The Crew", min:2, max:5, t:20, easy:false, tags:["coop","cartes","deduction"], p:"Un jeu de plis coopératif en missions, sans pouvoir parler de ses cartes."},
+  {n:"The Mind", min:2, max:4, t:20, easy:true, tags:["coop","cartes"], p:"Poser ses cartes dans l'ordre croissant, sans parler. Télépathie ou pas ?"},
+  {n:"SCOUT", min:2, max:5, t:20, easy:true, tags:["cartes"], p:"Une main qu'on n'a pas le droit de trier. Des combinaisons à battre."},
+  {n:"Fuji Flush", min:3, max:8, t:20, easy:true, tags:["cartes","rire"], p:"Posez plus haut que le voisin ou piochez. Les alliances de même valeur aident."},
+  {n:"Le Grand Dalmuti", min:4, max:8, t:30, easy:true, tags:["cartes","rire"], p:"Une hiérarchie sociale qui change à chaque manche. Le serf sert le roi."},
+  {n:"Pit", min:3, max:8, t:20, easy:true, tags:["rapidite","rire"], p:"Tout le monde échange en criant pour monopoliser une marchandise. Bruyant."},
+  {n:"Tortuga 1667", min:2, max:9, t:30, easy:true, tags:["bluff","equipes"], p:"Anglais contre Français sur un bateau pirate, avec un traître possible."},
+  {n:"Welcome Back to the Dungeon", min:2, max:4, t:20, easy:true, tags:["bluff","hasard"], p:"Piocher des monstres dans le donjon ou passer. Le plus courageux y va seul."},
+  {n:"Oriflamme", min:3, max:5, t:30, easy:true, tags:["bluff","cartes"], p:"Des cartes face cachée qui se révèlent dans l'ordre. Complots et assassinats."},
+  {n:"Citadelles", min:2, max:8, t:45, easy:false, tags:["bluff","cartes"], p:"Choisir un personnage secret à chaque tour et bâtir sa cité avant les autres."},
+  {n:"Room 25", min:1, max:6, t:30, easy:false, tags:["bluff","coop"], p:"Un complexe mortel, des pièces à explorer, et peut-être un gardien parmi vous."},
+  {n:"Not Alone", min:2, max:7, t:30, easy:true, tags:["bluff"], p:"Tous contre un : les naufragés tentent d'échapper à la créature qui les traque."},
+  {n:"Minivilles", min:2, max:4, t:30, easy:true, tags:["des"], p:"Bâtir sa ville à coups de dés. Chaque lancer rapporte à quelqu'un."},
+  {n:"Carcassonne", min:2, max:5, t:35, easy:true, tags:["strategie"], p:"Poser des tuiles pour construire villes, routes et abbayes. Le classique."},
+  {n:"Les Aventuriers du Rail", min:2, max:5, t:45, easy:true, tags:["strategie"], p:"Relier des villes en posant ses wagons avant que les autres ne bloquent."},
+  {n:"Kingdomino", min:2, max:4, t:20, easy:true, tags:["strategie"], p:"Des dominos de paysages pour construire le plus beau royaume en 5x5."},
+  {n:"Akropolis", min:2, max:4, t:30, easy:true, tags:["strategie"], p:"Empiler des tuiles pour bâtir sa cité grecque, en hauteur."},
+  {n:"Azul", min:2, max:4, t:40, easy:true, tags:["strategie"], p:"Récupérer des carreaux colorés pour décorer le palais. Joli et piégeux."},
+  {n:"Splendor", min:2, max:4, t:30, easy:true, tags:["strategie"], p:"Des jetons pierres précieuses, des cartes à acheter, des nobles à attirer."},
+  {n:"Harmonies", min:1, max:4, t:30, easy:true, tags:["strategie"], p:"Empiler des jetons pour créer des paysages où vos animaux se plairont."},
+  {n:"Cascadia", min:1, max:4, t:45, easy:true, tags:["strategie"], p:"Paysages et animaux à placer en suivant des objectifs. Calme et joli."},
+  {n:"Qwirkle", min:2, max:4, t:45, easy:true, tags:["strategie"], p:"Aligner des tuiles de même couleur ou de même forme. Un domino malin."},
+  {n:"Blokus", min:2, max:4, t:20, easy:true, tags:["strategie"], p:"Placer ses pièces en ne touchant que par les coins. On se bloque vite."},
+  {n:"Takenoko", min:2, max:4, t:45, easy:true, tags:["strategie"], p:"Un panda qui mange le bambou que le jardinier fait pousser."},
+  {n:"Tokaido", min:2, max:5, t:45, easy:true, tags:["strategie"], p:"Voyager sur la route de l'Est au Japon et collectionner les meilleurs souvenirs."},
+  {n:"Captain Flip", min:2, max:5, t:20, easy:true, tags:["hasard"], p:"Piocher des pirates un par un et choisir de quel côté les poser."},
+  {n:"CuBirds", min:2, max:5, t:20, easy:true, tags:["cartes"], p:"Des oiseaux sur des fils : poser une carte fait s'envoler ceux entre deux pareils."},
+  {n:"Port Royal", min:2, max:5, t:30, easy:true, tags:["hasard","cartes"], p:"Retourner des cartes jusqu'à trouver la bonne, mais deux bateaux pareils et on perd tout."},
+  {n:"Potion Explosion", min:2, max:4, t:40, easy:true, tags:["strategie"], p:"Des billes qui dévalent un distributeur comme au Candy Crush. On fait des combos."},
+  {n:"Sagrada", min:1, max:4, t:40, easy:true, tags:["des","strategie"], p:"Des dés de couleur à placer pour composer un vitrail sans casser les règles."},
+  {n:"L'Île Interdite", min:2, max:4, t:30, easy:true, tags:["coop"], p:"Une île qui coule, quatre trésors à récupérer. On gagne ou on coule ensemble."},
+  {n:"Le Désert Interdit", min:2, max:5, t:45, easy:true, tags:["coop"], p:"Reconstruire une machine volante sous le soleil et dans le sable."},
+  {n:"5-Minute Dungeon", min:2, max:5, t:15, easy:true, tags:["coop","rapidite"], p:"Cinq minutes pour vider un donjon, en jouant ses cartes le plus vite possible."},
+  {n:"Tsuro", min:2, max:8, t:15, easy:true, tags:["strategie"], p:"Poser des tuiles de chemin et ne pas sortir du plateau. Le dernier en jeu gagne."},
+  {n:"PitchCar", min:2, max:8, t:30, easy:true, tags:["adresse","rire"], p:"Une course de pichenettes sur un circuit en bois. Les sorties de route font rire."},
+  {n:"Crokinole", min:2, max:4, t:30, easy:true, tags:["adresse","equipes"], p:"Une pichenette de palets sur un plateau rond. Addictif, se joue aussi en 2 contre 2."},
+  {n:"Villa Paletti", min:2, max:4, t:20, easy:true, tags:["adresse"], p:"Retirer des colonnes pour les poser plus haut, sans faire tomber la villa."},
+  {n:"Meeple Circus", min:2, max:4, t:30, easy:true, tags:["adresse","rire"], p:"Des acrobaties de meeples à empiler en musique, contre le temps."},
+  {n:"ICECOOL", min:2, max:4, t:30, easy:true, tags:["adresse","rire"], p:"Des pingouins qu'on fait glisser et sauter de pièce en pièce en pichenettes."},
+  {n:"Downforce", min:2, max:6, t:40, easy:true, tags:["hasard","bluff"], p:"Une course de F1 à coups de cartes, avec des paris sur les pilotes en cours de route."},
+  {n:"Loony Quest", min:2, max:5, t:20, easy:true, tags:["dessin","rire"], p:"Tracer sur un calque transparent là où vous pensez que les cibles se trouvent."},
+  {n:"SET", min:1, max:8, t:20, easy:true, tags:["rapidite"], p:"Trouver trois cartes qui forment un set avant tout le monde. Cerveau en surchauffe."},
+  {n:"Bazar Bizarre", min:2, max:8, t:20, easy:true, tags:["rapidite","rire"], p:"Attraper le bon objet en bois selon la carte. Ou celui qui n'y est pas."},
+  {n:"Ubongo", min:1, max:4, t:25, easy:true, tags:["rapidite"], p:"Des puzzles à remplir avec des polyominos, sablier en marche."},
+  {n:"MicroMacro: Crime City", min:1, max:4, t:30, easy:true, tags:["enquete","coop","deduction"], p:"Une immense carte de ville, des crimes à résoudre en fouillant les détails à la loupe."},
+  {n:"Sherlock 13", min:2, max:4, t:15, easy:true, tags:["deduction","cartes"], p:"Trouver le suspect manquant en posant les bonnes questions."},
+  {n:"Unlock! Short Adventures", min:1, max:4, t:45, easy:true, tags:["enquete","coop","deduction"], p:"Un escape game en cartes, format court. Les énigmes à manipuler font le sel."},
+  {n:"Unlock!", min:1, max:6, t:60, easy:true, tags:["enquete","coop","deduction"], p:"L'escape game en cartes avec appli. Plus long mais très immersif."},
+  {n:"Deckscape", min:1, max:6, t:60, easy:true, tags:["enquete","coop","deduction"], p:"Un escape game dans un paquet de cartes, sans appli."},
+  {n:"Decktective", min:1, max:5, t:45, easy:true, tags:["enquete","coop","deduction"], p:"Une scène de crime en 3D faite de cartes à reconstituer, pour trouver le coupable."},
+  {n:"Cryptide", min:3, max:5, t:45, easy:false, tags:["deduction"], p:"Chacun détient un indice. Trouver la case où se cache la créature, sans trop se dévoiler."},
+  {n:"Turing Machine", min:1, max:4, t:20, easy:false, tags:["deduction"], p:"Trouver un code à trois chiffres en interrogeant une machine en cartes perforées."}
+];
+BASE.forEach(g=>g.kind="ambiance"); LIGHT.forEach(g=>{g.kind="leger"; BASE.push(g);});
+const TIMES = [{v:15,l:"15 min"},{v:30,l:"30 min"},{v:45,l:"45 min"},{v:999,l:"Peu importe"}];
+const KINDS = [{v:"all",l:"Tout"},{v:"ambiance",l:"Ambiance"},{v:"leger",l:"Jeux légers"}];
+
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let state = Object.assign({players:5, time:45, moods:[], easy:true, kind:"all"}, store.get("ojq-state2", {}));
+let off = new Set(store.get("ojq-off2", []));
+let custom = store.get("ojq-custom", []);
+let last = null;
+
+const $ = s => document.querySelector(s);
+const games = () => BASE.concat(custom);
+const save = () => { store.set("ojq-state2", state); store.set("ojq-off2", [...off]); store.set("ojq-custom", custom); };
+
+function matches(){
+  return games().filter(g =>
+    state.players >= g.min && state.players <= g.max &&
+    g.t <= state.time &&
+    (!state.easy || g.easy) &&
+    (state.kind === "all" || g.custom || g.kind === state.kind) &&
+    (g.custom || state.moods.length === 0 || state.moods.some(m => (g.tags||[]).includes(m)))
+  );
+}
+
+function renderControls(){
+  $("#players").innerHTML = state.players + "<small>joueur" + (state.players>1?"s":"") + "</small>";
+  $("#time").innerHTML = TIMES.map(t => `<button type="button" class="chip" data-t="${t.v}" aria-pressed="${state.time===t.v}">${t.v===999?t.l:"Jusqu'à "+t.l}</button>`).join("");
+  $("#kind").innerHTML = KINDS.map(k => `<button type="button" class="chip" data-k="${k.v}" aria-pressed="${state.kind===k.v}">${k.l}</button>`).join("");
+  $("#moods").innerHTML = Object.entries(TAGS).map(([k,l]) => `<button type="button" class="chip" data-m="${k}" aria-pressed="${state.moods.includes(k)}">${l}</button>`).join("");
+  $("#easy").setAttribute("aria-pressed", state.easy);
+}
+
+function renderList(){
+  const m = matches();
+  const pool = m.filter(g => !off.has(g.n));
+  $("#count").textContent = pool.length + (pool.length>1 ? " jeux dans le paquet" : " jeu dans le paquet");
+  $("#draw").disabled = pool.length === 0;
+  $("#hint").textContent = pool.length === 0 ? "Aucun jeu ne colle. Décochez une envie ou allongez la durée." : "";
+  m.sort((a,b) => (off.has(a.n)-off.has(b.n)) || a.n.localeCompare(b.n, "fr"));
+  $("#list").innerHTML = m.length ? m.map(g => {
+    const o = off.has(g.n);
+    return `<div class="row${o?" off":""}"><span class="name">${esc(g.n)}</span>
+      <span class="info">${g.min}–${g.max} joueurs, ${g.t} min${g.tags&&g.tags.length?", "+g.tags.map(t=>TAGS[t].toLowerCase()).join(", "):""}</span>
+      <button type="button" data-off="${esc(g.n)}">${o?"Remettre":"Écarter"}</button></div>`;
+  }).join("") : `<p class="empty">Rien pour ces critères.</p>`;
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function show(g){
+  $("#g-name").textContent = g.n;
+  $("#g-meta").textContent = `${g.min} à ${g.max} joueurs, environ ${g.t} min${g.easy?", règles express":""}`;
+  $("#g-pitch").textContent = g.p || "Un jeu ajouté depuis l'étagère du bar.";
+  $("#g-tags").innerHTML = (g.tags||[]).map(t => `<span>${TAGS[t]}</span>`).join("");
+  const suits = ["♠","♥","♦","♣"]; const s = suits[Math.floor(Math.random()*4)];
+  $("#c1").textContent = s; $("#c2").textContent = s;
+}
+
+function draw(){
+  let pool = matches().filter(g => !off.has(g.n));
+  if (!pool.length) return;
+  if (pool.length > 1 && last) pool = pool.filter(g => g.n !== last);
+  const g = pool[Math.floor(Math.random()*pool.length)];
+  last = g.n;
+  const card = $("#card");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce){ show(g); card.classList.add("flipped"); return; }
+  $("#draw").disabled = true;
+  card.classList.remove("flipped");
+  setTimeout(() => {
+    card.classList.add("shake");
+    setTimeout(() => {
+      card.classList.remove("shake");
+      show(g);
+      card.classList.add("flipped");
+      $("#draw").disabled = false;
+      $("#draw").textContent = "Tirer un autre jeu";
+    }, 500);
+  }, card.classList.contains("flipped") ? 0 : 0);
+}
+
+function update(){ save(); renderControls(); renderList(); }
+
+$("#minus").onclick = () => { state.players = Math.max(2, state.players-1); update(); };
+$("#plus").onclick = () => { state.players = Math.min(12, state.players+1); update(); };
+$("#time").onclick = e => { const b = e.target.closest("[data-t]"); if(!b) return; state.time = +b.dataset.t; update(); };
+$("#moods").onclick = e => { const b = e.target.closest("[data-m]"); if(!b) return; const m = b.dataset.m;
+  state.moods = state.moods.includes(m) ? state.moods.filter(x=>x!==m) : state.moods.concat(m); update(); };
+$("#kind").onclick = e => { const b = e.target.closest("[data-k]"); if(!b) return; state.kind = b.dataset.k; update(); };
+$("#easy").onclick = () => { state.easy = !state.easy; update(); };
+$("#list").onclick = e => { const b = e.target.closest("[data-off]"); if(!b) return; const n = b.dataset.off;
+  off.has(n) ? off.delete(n) : off.add(n); update(); };
+$("#draw").onclick = draw;
+$("#add").onsubmit = e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const n = f.get("n").trim(); if(!n) return;
+  let min = +f.get("min"), max = +f.get("max"); if (min > max) [min,max] = [max,min];
+  custom = custom.filter(g => g.n !== n).concat({n, min, max, t:+f.get("t"), easy:true, custom:true, tags:[], p:""});
+  e.target.reset(); update();
+};
+
+update();
+</script>
+</body>
+</html>
